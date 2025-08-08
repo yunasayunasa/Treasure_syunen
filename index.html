@@ -2,7 +2,7 @@
 <html>
 <head>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
-    <title>Manual Grid Mesh Test (Phaser 3.80)</title>
+    <title>Flat Array Mesh Test (Phaser 3.80)</title>
     <style>
         body { margin: 0; background-color: #1d1d1d; overflow: hidden; }
     </style>
@@ -27,28 +27,31 @@ class ExampleScene extends Phaser.Scene
         const width = frame.width;
         const height = frame.height;
 
-        // --- 手動でのグリッド情報生成 ---
-        const h_segments = 2; // 水平分割数
-        const v_segments = 2; // 垂直分割数
+        // --- フラット配列によるグリッド情報生成 ---
+        const h_segments = 2;
+        const v_segments = 2;
 
-        const vertices = []; // {x, y, u, v} 形式のオブジェクト配列
-        // 頂点(vertices)とUV座標を計算
+        const vertices = []; // [x0, y0, x1, y1, ...]
+        const uvs = [];      // [u0, v0, u1, v1, ...]
+        const colors = [];   // [c0, c1, c2, ...]
+        const alphas = [];   // [a0, a1, a2, ...]
+
         for (let i = 0; i <= v_segments; i++) {
-            const v = i / v_segments; // UVのV座標 (0.0 ~ 1.0)
+            const v = i / v_segments;
             for (let j = 0; j <= h_segments; j++) {
-                const u = j / h_segments; // UVのU座標 (0.0 ~ 1.0)
-                vertices.push({
-                    x: (u * width) - (width / 2),
-                    y: (v * height) - (height / 2),
-                    u: u,
-                    v: v,
-                    color: 0xffffff, // 色もここに含める
-                    alpha: 1         // アルファ値もここに含める
-                });
+                const u = j / h_segments;
+                
+                // 頂点座標 (中心が0,0)
+                vertices.push((u * width) - (width / 2), (v * height) - (height / 2));
+                // UV座標
+                uvs.push(u, v);
+                // 色とアルファ
+                colors.push(0xffffff);
+                alphas.push(1);
             }
         }
 
-        // 面(faces)情報を計算
+        // 面情報 (これは変更なし)
         const faces = [];
         for (let i = 0; i < v_segments; i++) {
             for (let j = 0; j < h_segments; j++) {
@@ -56,34 +59,16 @@ class ExampleScene extends Phaser.Scene
                 const p2 = p1 + 1;
                 const p3 = p1 + (h_segments + 1);
                 const p4 = p3 + 1;
-                faces.push({ vertices: [p1, p3, p4] });
-                faces.push({ vertices: [p1, p4, p2] });
+                faces.push(p1, p3, p4); // 1つ目の三角形
+                faces.push(p1, p4, p2); // 2つ目の三角形
             }
         }
         // --- グリッド情報生成ここまで ---
 
-        // 生成した情報を使ってMeshオブジェクトを作成
-        const mesh = this.add.mesh({
-            x: x,
-            y: y,
-            texture: 'character',
-            vertices: vertices,
-            faces: faces
-        });
+        // add.meshの引数に、フラット配列を渡す
+        const mesh = this.add.mesh(x, y, 'character', null, vertices, uvs, faces, false, null, colors, alphas);
         
-        // ★★★ setGridは使わない ★★★
-
-        // --- 呼吸モーション ---
-        const breathTween = this.tweens.add({
-            targets: [ mesh.vertices[1], mesh.vertices[4] ],
-            y: '-=2',
-            duration: 1500,
-            ease: 'Sine.easeInOut',
-            yoyo: true,
-            repeat: -1
-        });
-        
-        this.add.text(10, 10, 'Manual Grid Mesh Test', { color: '#ffffff' });
+        this.add.text(10, 10, 'Flat Array Mesh Test', { color: '#ffffff' });
     }
 }
 
