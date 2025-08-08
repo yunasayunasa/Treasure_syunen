@@ -1,76 +1,55 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <!-- Phaser 3.60.0 をCDNから直接読み込みます -->
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
-    <title>Minimal Mesh Test</title>
-    <style>
-        body { margin: 0; background-color: #1d1d1d; overflow: hidden; }
-    </style>
-</head>
-<body>
+// src/handlers/mesh_show.js (Phaser 3.60 完全互換版)
 
-<script>
-class ExampleScene extends Phaser.Scene
-{
-    preload ()
-    {
-        // 外部の安定したサーバーから、テスト用の画像を1枚読み込みます
-        this.load.image('character', 'https://labs.phaser.io/assets/pics/character-face.png');
+export function handleMeshShow(manager, params) {
+    const name = params.name;
+    if (!name) { console.warn('[mesh_show] nameは必須です。'); return Promise.resolve(); }
+    
+    const storage = params.storage;
+    if (!storage) { console.warn('[mesh_show] storageは必須です。'); return Promise.resolve(); }
+    const x = params.x !== undefined ? Number(params.x) : manager.scene.scale.width / 2;
+    const y = params.y !== undefined ? Number(params.y) : manager.scene.scale.height / 2;
+    const time = Number(params.time) || 0;
+
+    if (manager.scene.characters[name]) {
+        manager.scene.characters[name].destroy();
     }
 
-    create ()
-    {
-        const x = window.innerWidth / 2;
-        const y = window.innerHeight / 2;
-
-        // 1. 画像のサイズを取得します
-        const texture = this.textures.get('character');
-        const frame = texture.get();
-        const width = frame.width;
-        const height = frame.height;
-
-        // 2. Meshオブジェクトを生成します
-        // 今回は this.make.mesh という、より基本的なオブジェクト生成機能を使います
-        const mesh = this.make.mesh({
-            x: x,
-            y: y,
-            texture: 'character',
-            vertices: [
-                -width / 2, -height / 2,
-                 width / 2, -height / 2,
-                -width / 2,  height / 2,
-                 width / 2,  height / 2
-            ],
-            uvs: [
-                0, 0,
-                1, 0,
-                0, 1,
-                1, 1
-            ],
-            faces: [ 0, 2, 3, 0, 3, 1 ],
-            // 色とアルファを明示的に指定します
-            colors: [ 0xffffff, 0xffffff, 0xffffff, 0xffffff ],
-            alphas: [ 1, 1, 1, 1 ]
-        });
-
-        // 3. 生成したオブジェクトをシーンに追加して、表示させます
-        this.add.existing(mesh);
-        
-        // 画面に説明テキストを表示します
-        this.add.text(10, 10, 'Meshが表示されれば成功です', { color: '#ffffff' });
+    const texture = manager.scene.textures.get(storage);
+    if (!texture || texture.key === '__MISSING') {
+        console.error(`[mesh_show] テクスチャ[${storage}]が見つかりません。`);
+        return Promise.resolve();
     }
+    const frame = texture.get();
+    const width = frame.width;
+    const height = frame.height;
+
+    // --- Phaser 3.60でMeshを生成する確実な方法 ---
+    const vertices = [ -width / 2, -height / 2, width / 2, -height / 2, -width / 2, height / 2, width / 2, height / 2 ];
+    const uvs = [ 0, 0, 1, 0, 0, 1, 1, 1 ];
+    const faces = [ 0, 2, 3, 0, 3, 1 ];
+    const colors = [ 0xffffff, 0xffffff, 0xffffff, 0xffffff ];
+    const alphas = [ 1, 1, 1, 1 ];
+
+    // 1. クラスから直接インスタンス化
+    const chara = new Phaser.GameObjects.Mesh(manager.scene, x, y, storage, null, vertices, uvs, faces, colors, alphas);
+    
+    // 2. シーンに手動で追加
+    manager.scene.add.existing(chara);
+    // --- ここまで ---
+
+    // グリッド分割
+    chara.setGrid(2, 2);
+    
+    manager.layers.character.add(chara);
+    chara.setAlpha(0);
+    manager.scene.characters[name] = chara;
+
+    return new Promise(resolve => {
+        if (time > 0) {
+            manager.scene.tweens.add({ targets: chara, alpha: 1, duration: time, ease: 'Linear', onComplete: resolve });
+        } else {
+            chara.setAlpha(1);
+            resolve();
+        }
+    });
 }
-
-const config = {
-    type: Phaser.AUTO,
-    width: window.innerWidth,
-    height: window.innerHeight,
-    scene: ExampleScene
-};
-
-const game = new Phaser.Game(config);
-</script>
-
-</body>
-</html>
