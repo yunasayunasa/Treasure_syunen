@@ -1,8 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <!-- ローカルのphaser.min.jsを読み込む場合は、このファイルをダウンロードして同じフォルダに置く -->
+    <!-- <script src="phaser.min.js"></script> -->
+    
+    <!-- 面倒な場合は、CDNから読み込んでもOK -->
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
-    <title>Final Mesh Test (Image Source Check)</title>
+    
+    <title>Local Mesh Test</title>
     <style>
         body { margin: 0; background-color: #1d1d1d; overflow: hidden; }
     </style>
@@ -14,8 +19,8 @@ class ExampleScene extends Phaser.Scene
 {
     preload ()
     {
-        // ★★★ 画像のURLを、Wikimedia Commonsのパブリックドメイン画像に変更 ★★★
-        this.load.image('character', 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/PNG_transparency_demonstration_1.png/280px-PNG_transparency_demonstration_1.png');
+        // ★★★ 同じフォルダにある 'character.png' を読み込む ★★★
+        this.load.image('character', 'character.png');
     }
 
     create ()
@@ -24,8 +29,10 @@ class ExampleScene extends Phaser.Scene
         const y = window.innerHeight / 2;
 
         const texture = this.textures.get('character');
-        if (!texture.valid) { // 画像がロードできたかチェック
-            this.add.text(10, 50, 'Image load failed!', { color: '#ff0000' });
+        
+        // 画像がロードできたかどうかのチェック
+        if (!texture.valid) {
+            this.add.text(10, 50, 'Image load failed! Check file path.', { color: '#ff0000', fontSize: '24px' });
             return;
         }
         
@@ -33,6 +40,7 @@ class ExampleScene extends Phaser.Scene
         const width = frame.width;
         const height = frame.height;
 
+        // --- フラット配列によるグリッド情報生成 ---
         const h_segments = 2;
         const v_segments = 2;
         const vertices = [];
@@ -62,7 +70,7 @@ class ExampleScene extends Phaser.Scene
         
         const mesh = this.add.mesh(x, y, 'character', null, vertices, uvs, faces, false, null, colors, alphas);
         
-        this.add.text(10, 10, 'Final Mesh Test', { color: '#ffffff' });
+        this.add.text(10, 10, 'Local Mesh Test: Success!', { color: '#ffffff', fontSize: '24px' });
     }
 }
 
