@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <!-- Phaser 3.80.1 (最新版) をCDNから読み込みます -->
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
-    <title>Modern Mesh Test (Phaser 3.80)</title>
+    <title>Manual Grid Mesh Test (Phaser 3.80)</title>
     <style>
         body { margin: 0; background-color: #1d1d1d; overflow: hidden; }
     </style>
@@ -23,34 +22,60 @@ class ExampleScene extends Phaser.Scene
         const x = window.innerWidth / 2;
         const y = window.innerHeight / 2;
 
-        // --- Phaser 3.80でのモダンなMeshオブジェクトの生成方法 ---
+        const texture = this.textures.get('character');
+        const frame = texture.get();
+        const width = frame.width;
+        const height = frame.height;
+
+        // --- 手動でのグリッド情報生成 ---
+        const h_segments = 2; // 水平分割数
+        const v_segments = 2; // 垂直分割数
+
+        const vertices = []; // {x, y, u, v} 形式のオブジェクト配列
+        // 頂点(vertices)とUV座標を計算
+        for (let i = 0; i <= v_segments; i++) {
+            const v = i / v_segments; // UVのV座標 (0.0 ~ 1.0)
+            for (let j = 0; j <= h_segments; j++) {
+                const u = j / h_segments; // UVのU座標 (0.0 ~ 1.0)
+                vertices.push({
+                    x: (u * width) - (width / 2),
+                    y: (v * height) - (height / 2),
+                    u: u,
+                    v: v,
+                    color: 0xffffff, // 色もここに含める
+                    alpha: 1         // アルファ値もここに含める
+                });
+            }
+        }
+
+        // 面(faces)情報を計算
+        const faces = [];
+        for (let i = 0; i < v_segments; i++) {
+            for (let j = 0; j < h_segments; j++) {
+                const p1 = i * (h_segments + 1) + j;
+                const p2 = p1 + 1;
+                const p3 = p1 + (h_segments + 1);
+                const p4 = p3 + 1;
+                faces.push({ vertices: [p1, p3, p4] });
+                faces.push({ vertices: [p1, p4, p2] });
+            }
+        }
+        // --- グリッド情報生成ここまで ---
+
+        // 生成した情報を使ってMeshオブジェクトを作成
         const mesh = this.add.mesh({
             x: x,
             y: y,
             texture: 'character',
-            // 最新版ではverticesとuvsだけで自動的に面が作られることが多いですが、
-            // 明示的に指定するのが最も確実です。
-            vertices: [
-                { x: -128, y: -128, u: 0, v: 0 }, // 頂点0
-                { x:  128, y: -128, u: 1, v: 0 }, // 頂点1
-                { x: -128, y:  128, u: 0, v: 1 }, // 頂点2
-                { x:  128, y:  128, u: 1, v: 1 }  // 頂点3
-            ],
-            faces: [
-                { vertices: [ 0, 2, 3 ] },
-                { vertices: [ 0, 3, 1 ] }
-            ],
-            // 色とアルファも頂点ごとに指定可能
-            colors: [ 0xffffff, 0xffffff, 0xffffff, 0xffffff ],
-            alphas: [ 1, 1, 1, 1 ]
+            vertices: vertices,
+            faces: faces
         });
         
-        // グリッド分割
-        mesh.setGrid(2, 2);
+        // ★★★ setGridは使わない ★★★
 
         // --- 呼吸モーション ---
         const breathTween = this.tweens.add({
-            targets: [ mesh.vertices[1], mesh.vertices[4] ], // 頂点オブジェクトを直接ターゲットに
+            targets: [ mesh.vertices[1], mesh.vertices[4] ],
             y: '-=2',
             duration: 1500,
             ease: 'Sine.easeInOut',
@@ -58,7 +83,7 @@ class ExampleScene extends Phaser.Scene
             repeat: -1
         });
         
-        this.add.text(10, 10, 'Phaser 3.80 Mesh Test', { color: '#ffffff' });
+        this.add.text(10, 10, 'Manual Grid Mesh Test', { color: '#ffffff' });
     }
 }
 
