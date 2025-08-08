@@ -1,55 +1,76 @@
-// src/handlers/mesh_show.js (Phaser 3.60 完全互換版)
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- Phaser 3.80.1 (最新版) をCDNから読み込みます -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+    <title>Modern Mesh Test (Phaser 3.80)</title>
+    <style>
+        body { margin: 0; background-color: #1d1d1d; overflow: hidden; }
+    </style>
+</head>
+<body>
 
-export function handleMeshShow(manager, params) {
-    const name = params.name;
-    if (!name) { console.warn('[mesh_show] nameは必須です。'); return Promise.resolve(); }
-    
-    const storage = params.storage;
-    if (!storage) { console.warn('[mesh_show] storageは必須です。'); return Promise.resolve(); }
-    const x = params.x !== undefined ? Number(params.x) : manager.scene.scale.width / 2;
-    const y = params.y !== undefined ? Number(params.y) : manager.scene.scale.height / 2;
-    const time = Number(params.time) || 0;
-
-    if (manager.scene.characters[name]) {
-        manager.scene.characters[name].destroy();
+<script>
+class ExampleScene extends Phaser.Scene
+{
+    preload ()
+    {
+        this.load.image('character', 'https://labs.phaser.io/assets/pics/character-face.png');
     }
 
-    const texture = manager.scene.textures.get(storage);
-    if (!texture || texture.key === '__MISSING') {
-        console.error(`[mesh_show] テクスチャ[${storage}]が見つかりません。`);
-        return Promise.resolve();
+    create ()
+    {
+        const x = window.innerWidth / 2;
+        const y = window.innerHeight / 2;
+
+        // --- Phaser 3.80でのモダンなMeshオブジェクトの生成方法 ---
+        const mesh = this.add.mesh({
+            x: x,
+            y: y,
+            texture: 'character',
+            // 最新版ではverticesとuvsだけで自動的に面が作られることが多いですが、
+            // 明示的に指定するのが最も確実です。
+            vertices: [
+                { x: -128, y: -128, u: 0, v: 0 }, // 頂点0
+                { x:  128, y: -128, u: 1, v: 0 }, // 頂点1
+                { x: -128, y:  128, u: 0, v: 1 }, // 頂点2
+                { x:  128, y:  128, u: 1, v: 1 }  // 頂点3
+            ],
+            faces: [
+                { vertices: [ 0, 2, 3 ] },
+                { vertices: [ 0, 3, 1 ] }
+            ],
+            // 色とアルファも頂点ごとに指定可能
+            colors: [ 0xffffff, 0xffffff, 0xffffff, 0xffffff ],
+            alphas: [ 1, 1, 1, 1 ]
+        });
+        
+        // グリッド分割
+        mesh.setGrid(2, 2);
+
+        // --- 呼吸モーション ---
+        const breathTween = this.tweens.add({
+            targets: [ mesh.vertices[1], mesh.vertices[4] ], // 頂点オブジェクトを直接ターゲットに
+            y: '-=2',
+            duration: 1500,
+            ease: 'Sine.easeInOut',
+            yoyo: true,
+            repeat: -1
+        });
+        
+        this.add.text(10, 10, 'Phaser 3.80 Mesh Test', { color: '#ffffff' });
     }
-    const frame = texture.get();
-    const width = frame.width;
-    const height = frame.height;
-
-    // --- Phaser 3.60でMeshを生成する確実な方法 ---
-    const vertices = [ -width / 2, -height / 2, width / 2, -height / 2, -width / 2, height / 2, width / 2, height / 2 ];
-    const uvs = [ 0, 0, 1, 0, 0, 1, 1, 1 ];
-    const faces = [ 0, 2, 3, 0, 3, 1 ];
-    const colors = [ 0xffffff, 0xffffff, 0xffffff, 0xffffff ];
-    const alphas = [ 1, 1, 1, 1 ];
-
-    // 1. クラスから直接インスタンス化
-    const chara = new Phaser.GameObjects.Mesh(manager.scene, x, y, storage, null, vertices, uvs, faces, colors, alphas);
-    
-    // 2. シーンに手動で追加
-    manager.scene.add.existing(chara);
-    // --- ここまで ---
-
-    // グリッド分割
-    chara.setGrid(2, 2);
-    
-    manager.layers.character.add(chara);
-    chara.setAlpha(0);
-    manager.scene.characters[name] = chara;
-
-    return new Promise(resolve => {
-        if (time > 0) {
-            manager.scene.tweens.add({ targets: chara, alpha: 1, duration: time, ease: 'Linear', onComplete: resolve });
-        } else {
-            chara.setAlpha(1);
-            resolve();
-        }
-    });
 }
+
+const config = {
+    type: Phaser.AUTO,
+    width: window.innerWidth,
+    height: window.innerHeight,
+    scene: ExampleScene
+};
+
+const game = new Phaser.Game(config);
+</script>
+
+</body>
+</html>
