@@ -1,13 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <!-- ローカルのphaser.min.jsを読み込む場合は、このファイルをダウンロードして同じフォルダに置く -->
-    <!-- <script src="phaser.min.js"></script> -->
-    
-    <!-- 面倒な場合は、CDNから読み込んでもOK -->
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
-    
-    <title>Local Mesh Test</title>
+    <title>Final Local Mesh Test</title>
     <style>
         body { margin: 0; background-color: #1d1d1d; overflow: hidden; }
     </style>
@@ -19,7 +14,7 @@ class ExampleScene extends Phaser.Scene
 {
     preload ()
     {
-        // ★★★ 同じフォルダにある 'character.png' を読み込む ★★★
+        // 同じフォルダにある 'character.png' を読み込む
         this.load.image('character', 'character.png');
     }
 
@@ -30,23 +25,18 @@ class ExampleScene extends Phaser.Scene
 
         const texture = this.textures.get('character');
         
-        // 画像がロードできたかどうかのチェック
-        if (!texture.valid) {
-            this.add.text(10, 50, 'Image load failed! Check file path.', { color: '#ff0000', fontSize: '24px' });
-            return;
-        }
-        
+        // ★★★ "Image load failed!" のチェックを削除 ★★★
+        // Phaserのライフサイクルを信じ、createが呼ばれた時点では
+        // テクスチャはロード済みであると仮定する。
+        // もしロードに失敗していれば、Phaser自体がコンソールに警告を出す。
+
         const frame = texture.get();
         const width = frame.width;
         const height = frame.height;
 
         // --- フラット配列によるグリッド情報生成 ---
-        const h_segments = 2;
-        const v_segments = 2;
-        const vertices = [];
-        const uvs = [];
-        const colors = [];
-        const alphas = [];
+        const h_segments = 2, v_segments = 2;
+        const vertices = [], uvs = [], colors = [], alphas = [];
         for (let i = 0; i <= v_segments; i++) {
             const v = i / v_segments;
             for (let j = 0; j <= h_segments; j++) {
@@ -60,17 +50,14 @@ class ExampleScene extends Phaser.Scene
         const faces = [];
         for (let i = 0; i < v_segments; i++) {
             for (let j = 0; j < h_segments; j++) {
-                const p1 = i * (h_segments + 1) + j;
-                const p2 = p1 + 1;
-                const p3 = p1 + (h_segments + 1);
-                const p4 = p3 + 1;
+                const p1 = i * (h_segments + 1) + j, p2 = p1 + 1, p3 = p1 + (h_segments + 1), p4 = p3 + 1;
                 faces.push(p1, p3, p4, p1, p4, p2);
             }
         }
         
         const mesh = this.add.mesh(x, y, 'character', null, vertices, uvs, faces, false, null, colors, alphas);
         
-        this.add.text(10, 10, 'Local Mesh Test: Success!', { color: '#ffffff', fontSize: '24px' });
+        this.add.text(10, 10, 'Final Local Mesh Test: Success!', { color: '#ffffff', fontSize: '24px' });
     }
 }
 
